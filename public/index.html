@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Shop</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .book {
+            border: 1px solid #ccc;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Book Shop</h1>
+    <div id="books"></div>
+    <script>
+        fetch('/api/books')
+            .then(response => response.json())
+            .then(data => {
+                const booksDiv = document.getElementById('books');
+                data.forEach(book => {
+                    const bookDiv = document.createElement('div');
+                    bookDiv.className = 'book';
+                    bookDiv.innerHTML = `
+                        <h2>${book.title}</h2>
+                        <p>Author: ${book.author}</p>
+                        <p>Price: $${book.price}</p>
+                    `;
+                    booksDiv.appendChild(bookDiv);
+                });
+            });
+    </script>
+</body>
+</html>
