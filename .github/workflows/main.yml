@@ -1,0 +1,52 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: npm install
+
+      # Step 4: Archive the application for deployment
+      - name: Archive application
+        run: |
+          tar -czf app.tar.gz *
+
+      # Step 5: Deploy to EC2
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo apt update
+            sudo apt install -y nodejs npm
+            mkdir -p /var/www/bookshop
+            rm -rf /var/www/bookshop/*
+            mv app.tar.gz /var/www/bookshop
+            cd /var/www/bookshop
+            tar -xzf app.tar.gz
+            npm install
+            pm2 restart app || pm2 start app.js --name app
+
+      # Step 6: Cleanup
+      - name: Cleanup workspace
+        run: rm -f app.tar.gz
