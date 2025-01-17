@@ -1,0 +1,11 @@
+script: |
+  sudo apt update
+  sudo apt install -y nodejs npm
+  sudo npm install -g pm2
+  mkdir -p /var/www/bookshop
+  rm -rf /var/www/bookshop/*
+  mv app.tar.gz /var/www/bookshop
+  cd /var/www/bookshop
+  tar -xzf app.tar.gz
+  npm install
+  pm2 restart app || pm2 start app.js --name app
