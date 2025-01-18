@@ -32,7 +32,7 @@ jobs:
 
       - name: Write SSH Key
         run: |
-          echo "${{ secrets.EC2_KEY }}" > key.pem
+          echo "${{ secrets.EC2_KEY }}" > gamechanger.pem
           chmod 600 key.pem
 
       - name: Debug SSH Connection
