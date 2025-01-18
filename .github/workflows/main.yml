@@ -10,42 +10,65 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Check out the repository
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Set up Node.js environment
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '16'
 
-      # Step 3: Install dependencies
-      - name: Install dependencies
+      - name: Install Dependencies
         run: npm install
 
-      # Step 4: Archive the application
-      - name: Archive application
-        run: tar -czf app.tar.gz *
+      - name: Package Application
+        run: zip -r app.zip . -x ".git/*" "node_modules/*"
 
-      # Step 5: Deploy to EC2
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.6
+      - name: Prepare SSH Environment
+        run: |
+          mkdir -p ~/.ssh
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Write SSH Key
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Debug SSH Connection
+        run: |
+          ssh -vvv -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo Connection Successful"
+
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo apt update
-            sudo apt install -y nodejs npm
-            mkdir -p /var/www/bookshop
-            rm -rf /var/www/bookshop/*
-            mv app.tar.gz /var/www/bookshop
-            cd /var/www/bookshop
-            tar -xzf app.tar.gz
-            npm install
-            pm2 restart app || pm2 start app.js --name app
+          key: ${{ secrets.EC2_KEY }}
+          source: "app.zip"
+          target: "/home/ubuntu/"
+          debug: true
 
-      # Step 6: Cleanup
-      - name: Cleanup workspace
-        run: rm -f app.tar.gz
+      - name: Deploy Application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            # Update system and install dependencies
+            sudo apt-get update
+            sudo apt-get install -y nodejs npm unzip
+            sudo npm install -g pm2
+
+            # Ensure /var/www directory exists with correct permissions
+            sudo mkdir -p /var/www/bookshop
+            sudo chown -R $USER:$USER /var/www/bookshop
+
+            # Unzip application and install dependencies
+            unzip ~/app.zip -d /var/www/bookshop
+            cd /var/www/bookshop
+            npm install
+
+            # Start or restart the application with pm2
+            pm2 restart app || pm2 start app.js --name "bookshop"
