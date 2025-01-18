@@ -32,7 +32,7 @@ jobs:
 
       - name: Write SSH Key
         run: |
-          echo "${{ secrets.EC2_KEY }}" > gamechanger.pem
+          echo "${{ secrets.EC2_SSH_KEY }}" > gamechanger.pem
           chmod 600 gamechanger.pem
 
       - name: Debug SSH Connection
@@ -44,7 +44,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           source: "app.zip"
           target: "/home/ubuntu/"
           debug: true
@@ -54,7 +54,7 @@ jobs:
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Update system and install dependencies
             sudo apt-get update
